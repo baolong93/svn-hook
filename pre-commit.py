@@ -31,7 +31,7 @@ def valid_file_name(filename):
     " Return True if the file name is not UpperCaseCamel. "
     import os
     file_name_without_path = os.path.split(filename)[1]
-    if "entitydef" in filename:
+    if "entitydef" in filename or "servicedef" in filename:
         is_valid_file_name = file_name_without_path.islower()
         if not is_valid_file_name:
             sys.stderr.write("File name should follow standard lower_snake_case.xml:\n%s\n"
@@ -48,12 +48,11 @@ def check_file_name(look_cmd):
     " Check file name. "
     def file_ext_to_check(fname):
         import os
-        return os.path.splitext(fname)[1] in ".java .ftl .groovy".split()
+        return os.path.splitext(fname)[1] in ".java .ftl .groovy .xml".split()
     file_with_invalid_name = [
         ff for ff in files_added(look_cmd)
         if file_ext_to_check(ff) and valid_file_name(ff)]
     return len(file_with_invalid_name)
-
 
 def main():
     usage = """usage: %prog REPOS TXN
@@ -80,3 +79,4 @@ Run pre-commit options on a repository transaction."""
 if __name__ == "__main__":
     import sys
     sys.exit(main())
+
