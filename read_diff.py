@@ -29,14 +29,32 @@ class DiffElement:
 
 class DiffContentLine():
     def __init__(self, strline):
-       self.strline = strline
+        self.strline = strline[1:] + "\n"
 
     def containsTab(self):
         return "\t" in self.strline
 
     def endWithSemicolon(self):
-        return ";" == self.strline.strip()[-1]
+        import re
+        return re.search(r';\s*\n', self.strline) != None
 
+    def addLine(self, line):
+        self.strline +=  line[1:] + "\n"
+
+    def wrongElseFormat(self):
+        import re
+        return re.search(r'}\s*else{', self.strline) != None or \
+                re.search(r'}else\s*{', self.strline) != None or \
+                re.search(r'}\s{2,}else\s{', self.strline) != None or \
+                re.search(r'}\selse\s{2,}{', self.strline) != None or \
+                re.search(r'}\s*\n*\s*else\s*\n*\s*{', self.strline) != None
+
+    def wrongIfFormat(self):
+        import re
+        return re.search(r'\nif\(', self.strline) != None or \
+                re.search(r'\s*if\(', self.strline) != None or \
+                re.search(r'\s*if\s{2,}\(', self.strline) != None or \
+                re.search(r'}\s*if\s\(', self.strline) != None 
 
 def isHeader(line):
     return line.split(" ")[0] in ["Added:", "Modified:", "Deleted:"]
@@ -79,6 +97,45 @@ class TestFoo(unittest.TestCase):
     def testIsHeader(self):
         self.assertTrue(isHeader("Added: trunk/vendors/deli/soda.txt"))
         self.assertFalse(isHeader("  Added: trunk/vendors/deli/soda.txt test"))
+
+    def testAddLine(self):
+        diffline = DiffContentLine("+Firstline")
+        diffline.addLine("+Second line")
+        self.assertEquals(diffline.strline, "Firstline\nSecond line\n")
+
+    def testDiffContentContainSemicolonAtTheEnd(self):
+        diffline = DiffContentLine("+Firstline;")
+        diffline.addLine("+Second line")
+        self.assertTrue(diffline.endWithSemicolon())
+
+    def testDiffContainsWrongElseFormat(self):
+        diffline = DiffContentLine("+}else{")
+        self.assertTrue(diffline.wrongElseFormat())
+        diffline = DiffContentLine("+} else{")
+        self.assertTrue(diffline.wrongElseFormat())
+        diffline = DiffContentLine("+}else {")
+        self.assertTrue(diffline.wrongElseFormat())
+        diffline = DiffContentLine("+}  else {")
+        self.assertTrue(diffline.wrongElseFormat())
+        diffline = DiffContentLine("+} else     {")
+        self.assertTrue(diffline.wrongElseFormat())
+        diffline = DiffContentLine("+}\nelse\n{")
+        self.assertTrue(diffline.wrongElseFormat())
+        diffline = DiffContentLine("+} \n else \n {")
+        self.assertTrue(diffline.wrongElseFormat())
+
+    def testDiffContainsWrongIfFormat(self):
+        diffline = DiffContentLine("+\nif(")
+        self.assertTrue(diffline.wrongIfFormat())
+        diffline = DiffContentLine("+ if(")
+        self.assertTrue(diffline.wrongIfFormat())
+        diffline = DiffContentLine("+\n  if(")
+        self.assertTrue(diffline.wrongIfFormat())
+        diffline = DiffContentLine("+if  (")
+        self.assertTrue(diffline.wrongIfFormat())
+        diffline = DiffContentLine("+} if (")
+        self.assertTrue(diffline.wrongIfFormat())
+
 
 def main():
     unittest.main()
