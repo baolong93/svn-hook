@@ -11,7 +11,7 @@ def IsOdd(n):
 
 # Here's our "unit tests".
 
-class SvnDiffHeader:
+class DiffElement:
     """ The diff header look like this
     Added: trunk/vendors/deli/soda.txt """
 
@@ -27,7 +27,7 @@ class SvnDiffHeader:
     def getDiffFileExt(self):
         return self.getDiffFile().split(".")[1]
 
-class SvnDiffLine():
+class DiffContentLine():
     def __init__(self, strline):
        self.strline = strline
 
@@ -37,41 +37,48 @@ class SvnDiffLine():
     def endWithSemicolon(self):
         return ";" == self.strline.strip()[-1]
 
+
+def isHeader(line):
+    return line.split(" ")[0] in ["Added:", "Modified:", "Deleted:"]
+
 class TestFoo(unittest.TestCase):
 
     def testDiffInfo(self):
-        diffheader = SvnDiffHeader("Added: trunk/vendors/deli/soda.txt")
+        diffheader = DiffElement("Added: trunk/vendors/deli/soda.txt")
         self.assertEquals(diffheader.getDiffType(), "Added")
         self.assertEquals(diffheader.getDiffFile(), "trunk/vendors/deli/soda.txt")
         self.assertEquals(diffheader.getDiffFileExt(), "txt")
 
-        diffheader = SvnDiffHeader("Modified: trunk/vendors/deli/sandwich.groovy")
+        diffheader = DiffElement("Modified: trunk/vendors/deli/sandwich.groovy")
         self.assertEquals(diffheader.getDiffType(), "Modified")
         self.assertEquals(diffheader.getDiffFile(), "trunk/vendors/deli/sandwich.groovy")
         self.assertEquals(diffheader.getDiffFileExt(), "groovy")
 
-        diffheader = SvnDiffHeader("Copied: egg.txt (from rev 39, trunk/vendors/deli/pickle.txt)")
+        diffheader = DiffElement("Copied: egg.txt (from rev 39, trunk/vendors/deli/pickle.txt)")
         self.assertEquals(diffheader.getDiffType(), "Copied")
         self.assertEquals(diffheader.getDiffFile(), "egg.txt")
         self.assertEquals(diffheader.getDiffFileExt(), "txt")
 
     def testDiffLineContent(self):
-        diffline = SvnDiffLine("contains tab: 	")
+        diffline = DiffContentLine("contains tab: 	")
         self.assertTrue(diffline.containsTab())
 
-        diffline = SvnDiffLine("not ;contains tab:")
+        diffline = DiffContentLine("not ;contains tab:")
         self.assertFalse(diffline.containsTab())
 
     def testDiffLineEndWithSemicolon(self):
-        diffline = SvnDiffLine("contains semicolon: ;")
+        diffline = DiffContentLine("contains semicolon: ;")
         self.assertTrue(diffline.endWithSemicolon())
 
-        diffline = SvnDiffLine("semicolon in the ;middle of line")
+        diffline = DiffContentLine("semicolon in the ;middle of line")
         self.assertFalse(diffline.endWithSemicolon())
 
-        diffline = SvnDiffLine("semicolon follow by spaces;  \n")
+        diffline = DiffContentLine("semicolon follow by spaces;  \n")
         self.assertTrue(diffline.endWithSemicolon())
 
+    def testIsHeader(self):
+        self.assertTrue(isHeader("Added: trunk/vendors/deli/soda.txt"))
+        self.assertFalse(isHeader("  Added: trunk/vendors/deli/soda.txt test"))
 
 def main():
     unittest.main()
